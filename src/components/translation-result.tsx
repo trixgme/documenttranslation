@@ -10,8 +10,7 @@ interface TranslationResultProps {
   translatedContent: string;
   contentType: ContentType;
   targetLanguage: string;
-  outputFormat: OutputFormat;
-  onDownload: (format?: OutputFormat) => void;
+  onDownload: (format: OutputFormat) => void;
   onReset: () => void;
   isGenerating: boolean;
 }
