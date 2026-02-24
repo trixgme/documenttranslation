@@ -62,6 +62,16 @@ export default function Home() {
             </p>
           </div>
 
+          {/* Security disclaimer */}
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-center">
+            <p className="text-sm font-semibold text-red-700">
+              문서 누출로 인해 발생하는 문제는 전적으로 개인 책임임을 양지하시기 바랍니다.
+            </p>
+            <p className="mt-1 text-xs font-medium text-red-600">
+              Please be advised that any issues arising from document leakage are solely the responsibility of the individual.
+            </p>
+          </div>
+
           {/* Content area */}
           <div className="flex flex-col gap-6">
             {/* Upload zone - show when idle */}
