@@ -1,5 +1,5 @@
-import openai from "./openai";
-import anthropic from "./anthropic";
+import { getOpenAI } from "./openai";
+import { getAnthropic } from "./anthropic";
 import { MAX_CHARS_PER_CHUNK } from "./constants";
 import type { AIProvider, ContentType } from "@/types";
 
@@ -95,7 +95,7 @@ async function* streamWithOpenAI(
   systemPrompt: string,
   chunk: string,
 ): AsyncGenerator<string> {
-  const stream = await openai.chat.completions.create({
+  const stream = await getOpenAI().chat.completions.create({
     model: "gpt-4o",
     messages: [
       { role: "system", content: systemPrompt },
@@ -117,7 +117,7 @@ async function* streamWithClaude(
   systemPrompt: string,
   chunk: string,
 ): AsyncGenerator<string> {
-  const stream = anthropic.messages.stream({
+  const stream = getAnthropic().messages.stream({
     model: "claude-sonnet-4-20250514",
     max_tokens: 8192,
     system: systemPrompt,
@@ -138,7 +138,7 @@ async function* streamWithClaudePdf(
   systemPrompt: string,
   pdfBase64: string,
 ): AsyncGenerator<string> {
-  const stream = anthropic.messages.stream({
+  const stream = getAnthropic().messages.stream({
     model: "claude-sonnet-4-20250514",
     max_tokens: 64000,
     system: systemPrompt,

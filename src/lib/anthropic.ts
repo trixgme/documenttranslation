@@ -1,7 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+let instance: Anthropic | null = null;
 
-export default anthropic;
+export function getAnthropic(): Anthropic {
+  if (!instance) {
+    instance = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+  return instance;
+}
