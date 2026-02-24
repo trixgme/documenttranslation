@@ -67,12 +67,12 @@ export default function Home() {
             <p className="text-xs leading-relaxed text-amber-900">
               Anthropic API를 통해 전송된 데이터는 모델 학습에 사용되지 않으며, 다른 사용자의 응답에 노출되지 않습니다.
               <br />
-              단, API 사용 과정에서 민감 정보(고객 개인정보, 금융 데이터 등)를 포함하여 전송할 경우, 이로 인해 발생하는 정보 유출 및 관련 문제에 대한 책임은 <strong>사용자 본인</strong>에게 있음을 양지하시기 바랍니다.
+              단, API 사용 과정에서 <span className="font-semibold text-red-600">민감 정보(고객 개인정보, 금융 데이터 등)를 포함하여 전송할 경우</span>, 이로 인해 발생하는 정보 유출 및 관련 문제에 대한 책임은 <strong>사용자 본인</strong>에게 있음을 양지하시기 바랍니다.
             </p>
             <p className="mt-2 text-xs leading-relaxed text-amber-800">
               Data transmitted through the Anthropic API is not used for model training and is not exposed in responses to other users.
               <br />
-              However, please be advised that if sensitive information (such as personal customer data or financial records) is included in API transmissions, <strong>the user assumes full responsibility</strong> for any data leakage or related issues that may arise.
+              However, please be advised that <span className="font-semibold text-red-600">if sensitive information (such as personal customer data or financial records) is included in API transmissions</span>, <strong>the user assumes full responsibility</strong> for any data leakage or related issues that may arise.
             </p>
           </div>
 
