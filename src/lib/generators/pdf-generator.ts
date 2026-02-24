@@ -43,7 +43,33 @@ function ensureSpace(ctx: PdfContext, needed: number): void {
   }
 }
 
-/** Word-wrap text to fit within maxWidth, returns lines. */
+/** Measure text width with fallback for unsupported glyphs. */
+function measureText(font: PDFFont, text: string, fontSize: number): number {
+  try {
+    return font.widthOfTextAtSize(text, fontSize);
+  } catch {
+    return text.length * fontSize * 0.5;
+  }
+}
+
+/** Break a single long token into lines that fit within maxWidth (character-level). */
+function breakLongWord(word: string, font: PDFFont, fontSize: number, maxWidth: number): string[] {
+  const lines: string[] = [];
+  let current = "";
+  for (const char of word) {
+    const test = current + char;
+    if (measureText(font, test, fontSize) > maxWidth && current) {
+      lines.push(current);
+      current = char;
+    } else {
+      current = test;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+/** Word-wrap text to fit within maxWidth, with character-level fallback for long words. */
 function wrapText(text: string, font: PDFFont, fontSize: number, maxWidth: number): string[] {
   const lines: string[] = [];
   const words = text.split(/\s+/).filter(Boolean);
@@ -51,14 +77,22 @@ function wrapText(text: string, font: PDFFont, fontSize: number, maxWidth: numbe
 
   let currentLine = "";
   for (const word of words) {
-    const testLine = currentLine ? currentLine + " " + word : word;
-    let width: number;
-    try {
-      width = font.widthOfTextAtSize(testLine, fontSize);
-    } catch {
-      width = testLine.length * fontSize * 0.5; // fallback estimate
+    // If a single word is wider than maxWidth, break it by character
+    if (measureText(font, word, fontSize) > maxWidth) {
+      if (currentLine) {
+        lines.push(currentLine);
+        currentLine = "";
+      }
+      const broken = breakLongWord(word, font, fontSize, maxWidth);
+      for (let i = 0; i < broken.length - 1; i++) {
+        lines.push(broken[i]);
+      }
+      currentLine = broken[broken.length - 1] || "";
+      continue;
     }
-    if (width > maxWidth && currentLine) {
+
+    const testLine = currentLine ? currentLine + " " + word : word;
+    if (measureText(font, testLine, fontSize) > maxWidth && currentLine) {
       lines.push(currentLine);
       currentLine = word;
     } else {
@@ -190,18 +224,14 @@ function calculateColumnWidths(
   fontSize: number,
 ): number[] {
   const cellPadding = TABLE_CELL_PADDING;
+  const minColWidth = Math.max(CONTENT_WIDTH / numCols * 0.3, 40);
 
   // Measure max content width per column
   const maxContentWidths = new Array(numCols).fill(0);
   for (const row of rows) {
     for (let colIdx = 0; colIdx < numCols; colIdx++) {
       const cellText = row[colIdx]?.text || "";
-      let textWidth: number;
-      try {
-        textWidth = ctx.font.widthOfTextAtSize(cellText, fontSize);
-      } catch {
-        textWidth = cellText.length * fontSize * 0.5;
-      }
+      const textWidth = measureText(ctx.font, cellText, fontSize);
       maxContentWidths[colIdx] = Math.max(maxContentWidths[colIdx], textWidth + 2 * cellPadding);
     }
   }
@@ -209,14 +239,22 @@ function calculateColumnWidths(
   // Scale to fit within content width
   const totalNatural = maxContentWidths.reduce((a, b) => a + b, 0);
   if (totalNatural <= CONTENT_WIDTH) {
-    // Distribute remaining space proportionally
     const remaining = CONTENT_WIDTH - totalNatural;
     return maxContentWidths.map((w) => w + (remaining / numCols));
   }
 
-  // Scale down proportionally
+  // Scale down proportionally, enforcing minimum width
   const scale = CONTENT_WIDTH / totalNatural;
-  return maxContentWidths.map((w) => Math.max(w * scale, 30));
+  const scaled = maxContentWidths.map((w) => Math.max(w * scale, minColWidth));
+
+  // Re-adjust if minimums caused total to exceed content width
+  const scaledTotal = scaled.reduce((a, b) => a + b, 0);
+  if (scaledTotal > CONTENT_WIDTH) {
+    const reScale = CONTENT_WIDTH / scaledTotal;
+    return scaled.map((w) => w * reScale);
+  }
+
+  return scaled;
 }
 
 function renderElement(ctx: PdfContext, el: ParsedElement): void {
