@@ -23,7 +23,6 @@ export async function POST(request: NextRequest) {
     let mimeType = file.type;
 
     if (!SUPPORTED_MIME_TYPES[mimeType]) {
-      // Fallback: determine from extension
       const mimeMap: Record<string, string> = {
         pdf: "application/pdf",
         docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -41,7 +40,22 @@ export async function POST(request: NextRequest) {
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    const isPdf = mimeType === "application/pdf";
 
+    // PDF: skip text parsing — Claude reads raw PDF directly via document block
+    if (isPdf) {
+      return NextResponse.json({
+        success: true,
+        extractedContent: `[PDF document: ${file.name}]`,
+        contentType: "text" as const,
+        fileName: file.name,
+        fileSize: file.size,
+        originalFormat: SUPPORTED_MIME_TYPES[mimeType],
+        pdfBase64: buffer.toString("base64"),
+      });
+    }
+
+    // DOCX / TXT: parse text content for translation
     const result = await parseFile(buffer, mimeType);
 
     if (!result.content.trim()) {
@@ -51,8 +65,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isPdf = mimeType === "application/pdf";
-
     return NextResponse.json({
       success: true,
       extractedContent: result.content,
@@ -61,7 +73,6 @@ export async function POST(request: NextRequest) {
       fileName: file.name,
       fileSize: file.size,
       originalFormat: SUPPORTED_MIME_TYPES[mimeType],
-      ...(isPdf && { pdfBase64: buffer.toString("base64") }),
     });
   } catch (error) {
     console.error("Upload error:", error);
